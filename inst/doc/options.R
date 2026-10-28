@@ -12,6 +12,12 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 # Sys.setenv(HF_HOME = "~/.cache/doclingr-models")
 
 ## -----------------------------------------------------------------------------
+# Sys.setenv(
+#   HF_HOME        = "/shared/doclingr-models",
+#   HF_HUB_OFFLINE = "1"
+# )
+
+## -----------------------------------------------------------------------------
 # doc <- docling_convert("born-digital.pdf", ocr = FALSE)
 
 ## -----------------------------------------------------------------------------

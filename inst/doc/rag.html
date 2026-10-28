@@ -413,9 +413,11 @@ instead of an in-memory matrix.</p>
 <div id="persist" class="section level2">
 <h2>4. Persist</h2>
 <p>Converting and embedding are the expensive steps. Save the corpus so
-you only pay once:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>arrow<span class="sc">::</span><span class="fu">write_parquet</span>(corpus, <span class="st">&quot;corpus.parquet&quot;</span>)</span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co"># later:</span></span>
+you only pay once. <code>docling_write_chunks()</code> stores every
+column — including the <code>embedding</code> and <code>doc_items</code>
+list-columns — in Parquet or Feather:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">docling_write_chunks</span>(corpus, <span class="st">&quot;corpus.parquet&quot;</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="co"># later (or from Python/DuckDB -- it is a plain Parquet file):</span></span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>corpus <span class="ot">&lt;-</span> arrow<span class="sc">::</span><span class="fu">read_parquet</span>(<span class="st">&quot;corpus.parquet&quot;</span>)</span></code></pre></div>
 </div>
 <div id="scaling-to-many-documents" class="section level2">

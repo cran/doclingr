@@ -353,44 +353,63 @@ the backend once into a managed environment, then restart R:</p>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">install_docling</span>()         <span class="co"># creates an &quot;r-docling&quot; virtualenv</span></span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co"># ...restart R...</span></span>
 <span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">docling_available</span>()       <span class="co"># TRUE</span></span></code></pre></div>
+</div>
+<div id="model-cache-and-offline-use" class="section level2">
+<h2>Model cache and offline use</h2>
 <p>The deep-learning models (layout, tables, OCR) download on first
-conversion and are cached afterwards. To control where they are stored,
-set the Hugging Face cache before the first conversion:</p>
+conversion – several hundred megabytes – and are cached afterwards, so
+only the first run pays the cost. The cache lives in the standard
+Hugging Face location (<code>~/.cache/huggingface</code> by default). To
+control where models are stored, set <code>HF_HOME</code> before the
+first conversion (and before Python initializes):</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">Sys.setenv</span>(<span class="at">HF_HOME =</span> <span class="st">&quot;~/.cache/doclingr-models&quot;</span>)</span></code></pre></div>
+<p>On locked-down or air-gapped machines, populate the cache once from a
+machine with access (run one conversion of each kind you need, or copy
+the <code>HF_HOME</code> directory over), then force offline mode so
+nothing tries to reach the network:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">Sys.setenv</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="at">HF_HOME        =</span> <span class="st">&quot;/shared/doclingr-models&quot;</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">HF_HUB_OFFLINE =</span> <span class="st">&quot;1&quot;</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>)</span></code></pre></div>
+<p>With <code>HF_HUB_OFFLINE = &quot;1&quot;</code>, conversions use only what is
+already in the cache and fail fast (instead of hanging on a blocked
+connection) if a model is missing. Both variables must be set before the
+first conversion in the R session; the safest place is
+<code>.Renviron</code> or the shell environment.</p>
 </div>
 <div id="ocr" class="section level2">
 <h2>OCR</h2>
 <p>OCR reads text from scanned pages and images. It is on by default.
 For born-digital PDFs (exported from Word, LaTeX, etc.) the text layer
 is already present, so turning OCR off is a large, safe speed-up:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>doc <span class="ot">&lt;-</span> <span class="fu">docling_convert</span>(<span class="st">&quot;born-digital.pdf&quot;</span>, <span class="at">ocr =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>doc <span class="ot">&lt;-</span> <span class="fu">docling_convert</span>(<span class="st">&quot;born-digital.pdf&quot;</span>, <span class="at">ocr =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
 <p>Leave OCR on for scans, photographs of documents, or anything where
 text is “painted” into an image.</p>
 </div>
 <div id="table-structure-accurate-vs.-fast" class="section level2">
 <h2>Table structure: accurate vs. fast</h2>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># Best structure (default) -- complex, spanning, nested tables</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">docling_convert</span>(<span class="st">&quot;report.pdf&quot;</span>, <span class="at">table_mode =</span> <span class="st">&quot;accurate&quot;</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a></span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># Quicker -- clean grids, large batches</span></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="fu">docling_convert</span>(<span class="st">&quot;report.pdf&quot;</span>, <span class="at">table_mode =</span> <span class="st">&quot;fast&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># Best structure (default) -- complex, spanning, nested tables</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">docling_convert</span>(<span class="st">&quot;report.pdf&quot;</span>, <span class="at">table_mode =</span> <span class="st">&quot;accurate&quot;</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co"># Quicker -- clean grids, large batches</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a><span class="fu">docling_convert</span>(<span class="st">&quot;report.pdf&quot;</span>, <span class="at">table_mode =</span> <span class="st">&quot;fast&quot;</span>)</span></code></pre></div>
 </div>
 <div id="hardware-acceleration" class="section level2">
 <h2>Hardware acceleration</h2>
 <p>Pick the device the models run on, and optionally the CPU thread
 count:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">docling_convert</span>(<span class="st">&quot;report.pdf&quot;</span>, <span class="at">device =</span> <span class="st">&quot;mps&quot;</span>)               <span class="co"># Apple Silicon</span></span>
-<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="fu">docling_convert</span>(<span class="st">&quot;report.pdf&quot;</span>, <span class="at">device =</span> <span class="st">&quot;cuda&quot;</span>)              <span class="co"># NVIDIA GPU</span></span>
-<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">docling_convert</span>(<span class="st">&quot;report.pdf&quot;</span>, <span class="at">device =</span> <span class="st">&quot;cpu&quot;</span>, <span class="at">num_threads =</span> <span class="dv">8</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">docling_convert</span>(<span class="st">&quot;report.pdf&quot;</span>, <span class="at">device =</span> <span class="st">&quot;mps&quot;</span>)               <span class="co"># Apple Silicon</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">docling_convert</span>(<span class="st">&quot;report.pdf&quot;</span>, <span class="at">device =</span> <span class="st">&quot;cuda&quot;</span>)              <span class="co"># NVIDIA GPU</span></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">docling_convert</span>(<span class="st">&quot;report.pdf&quot;</span>, <span class="at">device =</span> <span class="st">&quot;cpu&quot;</span>, <span class="at">num_threads =</span> <span class="dv">8</span>)</span></code></pre></div>
 <p><code>device = &quot;auto&quot;</code> (the default) lets Docling choose.</p>
 </div>
 <div id="images-and-figures" class="section level2">
 <h2>Images and figures</h2>
 <p>By default images are not retained, which keeps results small. Ask
 for them when you want to save figures or work with page images:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>doc  <span class="ot">&lt;-</span> <span class="fu">docling_convert</span>(<span class="st">&quot;paper.pdf&quot;</span>, <span class="at">images =</span> <span class="cn">TRUE</span>, <span class="at">images_scale =</span> <span class="dv">2</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>figs <span class="ot">&lt;-</span> <span class="fu">docling_figures</span>(doc, <span class="at">image_dir =</span> <span class="st">&quot;figures&quot;</span>)</span>
-<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>figs</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>doc  <span class="ot">&lt;-</span> <span class="fu">docling_convert</span>(<span class="st">&quot;paper.pdf&quot;</span>, <span class="at">images =</span> <span class="cn">TRUE</span>, <span class="at">images_scale =</span> <span class="dv">2</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>figs <span class="ot">&lt;-</span> <span class="fu">docling_figures</span>(doc, <span class="at">image_dir =</span> <span class="st">&quot;figures&quot;</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>figs</span></code></pre></div>
 <p><code>images_scale = 2</code> renders at roughly twice 72 DPI; raise
 it for crisper figure exports at the cost of memory.</p>
 </div>
@@ -398,25 +417,25 @@ it for crisper figure exports at the cost of memory.</p>
 <h2>Batch conversion</h2>
 <p>Pass a vector of sources to convert them in one batch; the result is
 a named list of documents:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>docs <span class="ot">&lt;-</span> <span class="fu">docling_convert</span>(</span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="fu">c</span>(<span class="st">&quot;a.pdf&quot;</span>, <span class="st">&quot;b.docx&quot;</span>, <span class="st">&quot;c.html&quot;</span>),</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">ocr        =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">table_mode =</span> <span class="st">&quot;fast&quot;</span></span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>)</span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="fu">length</span>(docs)</span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>docs[[<span class="st">&quot;a.pdf&quot;</span>]]</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>docs <span class="ot">&lt;-</span> <span class="fu">docling_convert</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="fu">c</span>(<span class="st">&quot;a.pdf&quot;</span>, <span class="st">&quot;b.docx&quot;</span>, <span class="st">&quot;c.html&quot;</span>),</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">ocr        =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">table_mode =</span> <span class="st">&quot;fast&quot;</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="fu">length</span>(docs)</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>docs[[<span class="st">&quot;a.pdf&quot;</span>]]</span></code></pre></div>
 </div>
 <div id="a-pragmatic-recipe" class="section level2">
 <h2>A pragmatic recipe</h2>
 <p>For a large pile of born-digital reports where you mostly care about
 text and tables:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>docs <span class="ot">&lt;-</span> <span class="fu">docling_convert</span>(</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="fu">list.files</span>(<span class="st">&quot;reports&quot;</span>, <span class="at">pattern =</span> <span class="st">&quot;[.]pdf$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">ocr        =</span> <span class="cn">FALSE</span>,      <span class="co"># no scans</span></span>
-<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">table_mode =</span> <span class="st">&quot;fast&quot;</span>,     <span class="co"># clean grids</span></span>
-<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">device     =</span> <span class="st">&quot;auto&quot;</span></span>
-<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>)</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>docs <span class="ot">&lt;-</span> <span class="fu">docling_convert</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="fu">list.files</span>(<span class="st">&quot;reports&quot;</span>, <span class="at">pattern =</span> <span class="st">&quot;[.]pdf$&quot;</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">ocr        =</span> <span class="cn">FALSE</span>,      <span class="co"># no scans</span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">table_mode =</span> <span class="st">&quot;fast&quot;</span>,     <span class="co"># clean grids</span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="at">device     =</span> <span class="st">&quot;auto&quot;</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>)</span></code></pre></div>
 <p>Then chunk and embed as shown in <code>vignette(&quot;rag&quot;)</code>.</p>
 </div>
 

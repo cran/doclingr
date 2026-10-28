@@ -48,8 +48,8 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 # cosine_top("What datasets were used for evaluation?")
 
 ## -----------------------------------------------------------------------------
-# arrow::write_parquet(corpus, "corpus.parquet")
-# # later:
+# docling_write_chunks(corpus, "corpus.parquet")
+# # later (or from Python/DuckDB -- it is a plain Parquet file):
 # corpus <- arrow::read_parquet("corpus.parquet")
 
 ## -----------------------------------------------------------------------------
